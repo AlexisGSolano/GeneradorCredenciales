@@ -1,0 +1,1554 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Credenciales Escolares - Cadete Vicente Suárez</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SheetJS XLSX Parser -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- html2canvas for image export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- JSZip for batch ZIP export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,400;0,600;0,700;0,800;0,900;1,800&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Montserrat', 'sans-serif'],
+                        condensed: ['Roboto Condensed', 'sans-serif'],
+                    },
+                    colors: {
+                        navy: {
+                            800: '#0b1d3a',
+                            900: '#071326',
+                            950: '#040b17'
+                        },
+                        gold: {
+                            300: '#ffe596',
+                            400: '#f5c542',
+                            500: '#d49e1e',
+                            600: '#b87e14'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        /* Exact Credential Geometric & Metallic Styling */
+        .card-bg-gradient {
+            background: radial-gradient(circle at 50% 30%, #0d2c54 0%, #06152b 75%, #030a16 100%);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Abstract angled polygons mimicking original ID card background */
+        .card-bg-polygons {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .gold-text-gradient {
+            color: #fce07a;
+            text-shadow: 0px 2px 4px rgba(0, 0, 0, 0.95), 0px 0px 1px #8a5d07;
+        }
+
+        .gold-text-bright {
+            color: #f7cb45;
+            text-shadow: 0px 1px 2px rgba(0,0,0,0.9);
+        }
+
+        /* Gold Ring for Photo Frame */
+        .gold-frame-ring {
+            background: linear-gradient(145deg, #fff5b8 0%, #e5b32a 40%, #8e620c 70%, #ffd966 100%);
+            padding: 5px;
+            box-shadow: 0 8px 18px rgba(0, 0, 0, 0.6), inset 0 2px 4px rgba(255, 255, 255, 0.8);
+            border-radius: 50%;
+        }
+
+        .gold-header-banner {
+            background: linear-gradient(180deg, #092040 0%, #041024 100%);
+            border: 2px solid #e0ab2b;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        /* Default Vector Landscape Photo Placeholder */
+        .default-landscape-bg {
+            background: linear-gradient(180deg, #7ec0ee 0%, #cbe5ff 50%, #9bc440 50.1%, #6a9616 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .default-cloud {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 55px;
+            height: 25px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: inset 0 -2px 4px rgba(0,0,0,0.1);
+        }
+        .default-cloud::before {
+            content: '';
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            width: 22px;
+            height: 22px;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+        .default-cloud::after {
+            content: '';
+            position: absolute;
+            top: -14px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            background: #ffffff;
+            border-radius: 50%;
+        }
+
+        /* Custom Scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        /* Print Media Queries */
+        @media print {
+            body {
+                background: white !important;
+                color: black !important;
+                padding: 0 !important;
+                margin: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            #print-area {
+                display: block !important;
+                width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            .print-page {
+                page-break-after: always;
+                break-after: page;
+                display: grid;
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px 16px;
+                padding: 8mm 6mm;
+                box-sizing: border-box;
+                justify-items: center;
+                align-items: center;
+            }
+            .credential-card {
+                box-shadow: none !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans flex flex-col">
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed top-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="no-print bg-slate-900 border-b border-slate-800 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center shadow-lg text-slate-950 font-black text-xl">
+                    <i class="fa-solid fa-id-card"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold tracking-tight text-white leading-tight">Generador de Credenciales Escolares</h1>
+                    <p class="text-xs text-amber-400 font-medium">Escuela Primaria Matutina 'Cadete Vicente Suárez'</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2">
+                <button onclick="downloadSampleExcel()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold px-3 py-2 rounded-lg transition border border-slate-700 flex items-center gap-2">
+                    <i class="fa-solid fa-file-excel text-emerald-400"></i>
+                    <span class="hidden sm:inline">Plantilla Excel</span>
+                </button>
+                <button onclick="downloadAllCardsZIP()" class="bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold px-3 py-2 rounded-lg transition shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-file-zipper"></i>
+                    <span class="hidden sm:inline">Descargar Lote (ZIP)</span>
+                </button>
+                <button onclick="triggerPrint()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold px-4 py-2 rounded-lg transition shadow-md flex items-center gap-2">
+                    <i class="fa-solid fa-print"></i>
+                    <span>Imprimir Hojas</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- CONTENT WRAPPER -->
+    <div class="no-print flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT CONTROL PANEL (Cols 1-4) -->
+        <div class="lg:col-span-4 flex flex-col gap-6">
+
+            <!-- TAB 1: CARGAR ARCHIVO & CONFIG -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-cloud-arrow-up"></i> 1. Carga de Datos (Excel / CSV)
+                </h2>
+
+                <!-- Dropzone -->
+                <div id="drop-zone" onclick="document.getElementById('excel-file-input').click()" 
+                     class="border-2 border-dashed border-slate-700 hover:border-amber-400 bg-slate-950/60 rounded-xl p-5 text-center cursor-pointer transition group">
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+                    <div class="w-12 h-12 mx-auto mb-2 rounded-full bg-slate-800 group-hover:bg-amber-500/10 flex items-center justify-center text-amber-400 transition">
+                        <i class="fa-solid fa-file-invoice text-2xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-200">Haz clic o arrastra tu archivo Excel aquí</p>
+                    <p class="text-[11px] text-slate-400 mt-1">Soporta formatos con N.P., CURP, NIA y Nombre</p>
+                    <span class="inline-block mt-2 px-3 py-1 bg-slate-800 text-slate-300 rounded-full text-[10px] font-medium border border-slate-700">.xlsx / .xls / .csv</span>
+                </div>
+
+                <!-- Global Options -->
+                <div class="mt-4 space-y-3 pt-3 border-t border-slate-800">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">Ciclo Escolar (Global)</label>
+                        <input type="text" id="global-ciclo" value="2026 - 2027" oninput="updateGlobalCiclo(this.value)"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-amber-300 focus:outline-none focus:border-amber-400 font-bold">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-300 mb-1">
+                            Grado y Grupo Predeterminado <span class="text-amber-400 text-[10px] font-normal">(Sincroniza todos)</span>
+                        </label>
+                        <input type="text" id="global-grado" value='1° "A"' oninput="updateGlobalGrado(this.value)" onchange="updateGlobalGrado(this.value)"
+                               class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white focus:outline-none focus:border-amber-400 font-bold">
+                    </div>
+                </div>
+            </div>
+
+            <!-- BATCH PHOTO & QR UPLOAD -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl space-y-4">
+                <div>
+                    <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-images"></i> 2. Carga Masiva de Fotos
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mb-2">
+                        Imágenes de alumnos (JPG/PNG). Asocia por <strong class="text-slate-200">NIA</strong>, <strong class="text-slate-200">CURP</strong> o <strong class="text-slate-200">N.P.</strong> (Ejemplo: <code class="text-amber-300">13296139.jpg</code>).
+                    </p>
+
+                    <label class="block">
+                        <input type="file" id="batch-photos-input" multiple accept="image/*" onchange="handleBatchPhotos(event)" class="hidden">
+                        <span class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-semibold text-xs py-2 px-3 rounded-xl cursor-pointer transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-user-gear text-amber-400"></i> Seleccionar Lote de Fotos Alumnos
+                        </span>
+                    </label>
+                </div>
+
+                <div class="pt-3 border-t border-slate-800">
+                    <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-1 flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode"></i> 3. Carga Masiva de Códigos QR
+                    </h2>
+                    <p class="text-[11px] text-slate-400 mb-2">
+                        Imágenes JPG/PNG de Códigos QR. Vincula por <strong class="text-slate-200">NIA</strong>, <strong class="text-slate-200">CURP</strong> o <strong class="text-slate-200">N.P.</strong> (Ejemplo: <code class="text-amber-300">13296139_qr.jpg</code> o <code class="text-amber-300">13296139.png</code>).
+                    </p>
+
+                    <label class="block">
+                        <input type="file" id="batch-qr-input" multiple accept="image/*" onchange="handleBatchQRs(event)" class="hidden">
+                        <span class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-semibold text-xs py-2 px-3 rounded-xl cursor-pointer transition flex items-center justify-center gap-2">
+                            <i class="fa-solid fa-qrcode text-amber-400"></i> Seleccionar Lote de Imágenes QR
+                        </span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- CARD CUSTOMIZER QUICK CONTROLS -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-sliders"></i> Ajustes de Impresión
+                </h2>
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between text-xs text-slate-300">
+                        <span>Mostrar Marcas de Corte:</span>
+                        <input type="checkbox" id="show-crop-marks" checked onchange="renderPrintPages()" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
+                    </div>
+                    <div class="flex items-center justify-between text-xs text-slate-300">
+                        <span>Credenciales por Hoja:</span>
+                        <select id="cards-per-page" onchange="renderPrintPages()" class="bg-slate-950 border border-slate-700 rounded px-2 py-1 text-xs text-white">
+                            <option value="8">8 credenciales (2 x 4)</option>
+                            <option value="10">10 credenciales (2 x 5)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- RIGHT DISPLAY AREA (Cols 5-12) -->
+        <div class="lg:col-span-8 flex flex-col gap-6">
+
+            <!-- NAVIGATION TABS -->
+            <div class="flex border-b border-slate-800 gap-2">
+                <button id="tab-btn-preview" onclick="switchTab('preview')" class="px-5 py-3 text-xs font-bold rounded-t-xl transition bg-slate-900 text-amber-400 border-t-2 border-amber-400 flex items-center gap-2">
+                    <i class="fa-solid fa-id-card"></i> Vista Previa Credencial
+                </button>
+                <button id="tab-btn-table" onclick="switchTab('table')" class="px-5 py-3 text-xs font-bold rounded-t-xl transition bg-slate-950 text-slate-400 hover:text-slate-200 border-t-2 border-transparent flex items-center gap-2">
+                    <i class="fa-solid fa-table-list"></i> Lista de Alumnos (<span id="student-count-badge">0</span>)
+                </button>
+                <button id="tab-btn-sheet" onclick="switchTab('sheet')" class="px-5 py-3 text-xs font-bold rounded-t-xl transition bg-slate-950 text-slate-400 hover:text-slate-200 border-t-2 border-transparent flex items-center gap-2">
+                    <i class="fa-solid fa-scroll"></i> Hoja Completa de Impresión
+                </button>
+            </div>
+
+            <!-- TAB CONTENT 1: SINGLE CARD PREVIEW -->
+            <div id="tab-content-preview" class="flex flex-col items-center justify-center bg-slate-900 border border-slate-800 rounded-2xl p-6 min-h-[550px] relative overflow-hidden">
+
+                <!-- Navigation toolbar for cards -->
+                <div class="w-full max-w-md flex items-center justify-between bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 mb-6">
+                    <button onclick="prevStudent()" class="p-2 text-slate-300 hover:text-amber-400 transition font-bold disabled:opacity-30">
+                        <i class="fa-solid fa-chevron-left"></i> Anterior
+                    </button>
+                    <span id="current-card-indicator" class="text-xs font-bold text-slate-300">Alumno 1 de 1</span>
+                    <button onclick="nextStudent()" class="p-2 text-slate-300 hover:text-amber-400 transition font-bold disabled:opacity-30">
+                        Siguiente <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+
+                <!-- CARD CONTAINER PREVIEW (Ratio 54mm x 85.6mm -> ~330px x 522px) -->
+                <div id="card-preview-wrapper" class="relative group">
+                    <div id="single-card-render" class="credential-card card-bg-gradient w-[330px] h-[522px] rounded-2xl border-[3px] border-amber-400/80 shadow-2xl flex flex-col justify-between p-3 select-none relative">
+                        
+                        <!-- Dynamic Angles & Polygon Background SVG Overlay -->
+                        <svg class="card-bg-polygons" viewBox="0 0 330 522" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-20 -20 L140 -20 L-20 180 Z" fill="#0096c7" opacity="0.25" />
+                            <path d="M350 -20 L350 200 L180 -20 Z" fill="#0077b6" opacity="0.35" />
+                            <path d="M350 140 L350 360 L210 250 Z" fill="#0096c7" opacity="0.3" />
+                            <path d="M-20 300 L110 420 L-20 480 Z" fill="#0077b6" opacity="0.25" />
+                            <path d="M0 430 L120 540" stroke="#f5c542" stroke-width="3" opacity="0.7" />
+                            <path d="M210 540 L340 410" stroke="#f5c542" stroke-width="4" opacity="0.8" />
+                            <path d="M340 -10 L170 -10 L340 160 Z" stroke="#e0ab2b" stroke-width="1.5" fill="none" opacity="0.5" />
+                        </svg>
+
+                        <!-- CARD HEADER -->
+                        <div class="relative z-10 text-center pt-1">
+                            <div class="gold-header-banner rounded-xl py-1.5 px-2 relative overflow-hidden">
+                                <h3 class="text-[11px] font-extrabold tracking-widest text-white uppercase font-sans leading-none mb-1 drop-shadow">
+                                    ESCUELA PRIMARIA MATUTINA
+                                </h3>
+                                <h2 class="text-[17px] font-black uppercase font-sans gold-text-gradient tracking-tight leading-tight">
+                                    CADETE VICENTE SUÁREZ
+                                </h2>
+                            </div>
+                        </div>
+
+                        <!-- OVAL PHOTO CONTAINER -->
+                        <div class="relative z-10 my-auto flex justify-center py-1">
+                            <div class="gold-frame-ring w-[165px] h-[215px] rounded-[50%/50%] flex items-center justify-center overflow-hidden">
+                                <div id="card-photo-box" class="w-full h-full rounded-[50%/50%] overflow-hidden bg-slate-900 relative flex items-center justify-center">
+                                    <!-- Dynamic Image -->
+                                    <img id="card-student-img" class="w-full h-full object-cover hidden block" alt="Foto Alumno">
+                                    <!-- Default Vector Graphic if no photo -->
+                                    <div id="card-default-photo" class="w-full h-full default-landscape-bg flex flex-col items-center justify-center absolute inset-0">
+                                        <div class="default-cloud"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- STUDENT DATA SECTION -->
+                        <div class="relative z-10 flex flex-col items-center text-center px-1 space-y-1 font-sans">
+                            <!-- Nombre -->
+                            <div class="w-full">
+                                <span class="block text-[10px] font-extrabold gold-text-bright tracking-wider uppercase">
+                                    NOMBRE DEL ALUMNO:
+                                </span>
+                                <h4 id="card-student-name" class="text-[13px] font-black text-white uppercase tracking-tight leading-tight line-clamp-2 px-1">
+                                    ACA GUTIERREZ GAEL MATEO
+                                </h4>
+                            </div>
+
+                            <!-- Grado, Grupo y NIA -->
+                            <div class="w-full flex items-center justify-between px-2 pt-0.5">
+                                <div class="text-left">
+                                    <span class="text-[9px] font-extrabold gold-text-bright tracking-tight">GRADO Y GRUPO: </span>
+                                    <span id="card-student-grado" class="text-[11px] font-black text-white">1° "A"</span>
+                                </div>
+                                <div class="text-right">
+                                    <span class="text-[9px] font-extrabold gold-text-bright tracking-tight">NIA: </span>
+                                    <span id="card-student-nia" class="text-[11px] font-black text-white">13170795</span>
+                                </div>
+                            </div>
+
+                            <!-- CURP -->
+                            <div class="w-full text-center">
+                                <span class="text-[9px] font-extrabold gold-text-bright tracking-wider">CURP: </span>
+                                <span id="card-student-curp" class="text-[11px] font-mono font-extrabold text-white tracking-wider">AAGG190307HPLCTLA0</span>
+                            </div>
+
+                            <!-- CICLO ESCOLAR -->
+                            <div class="w-full text-center">
+                                <span class="text-[9px] font-extrabold gold-text-bright tracking-wider">CICLO ESCOLAR: </span>
+                                <span id="card-student-ciclo" class="text-[11px] font-black text-white">2026 - 2027</span>
+                            </div>
+                        </div>
+
+                        <!-- CARD FOOTER (Emblem on Left, QR Image or Blank Box on Right) -->
+                        <div class="relative z-10 flex items-end justify-between px-1 pt-1">
+                            <!-- School Shield Emblem (Left) -->
+                            <div class="flex items-center gap-1.5">
+                                <div class="w-14 h-16 relative flex items-center justify-center">
+                                    <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-md">
+                                        <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
+                                        <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+                                        <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
+                                        <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
+                                        <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
+                                        <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
+                                        <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
+                                        <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
+                                        <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
+                                    </svg>
+                                </div>
+                            </div>
+
+                            <!-- QR Box (Renders Image if QR exists, otherwise clean blank space) -->
+                            <div id="card-qr-container" class="w-[62px] h-[62px] bg-white rounded border border-slate-300 shadow-inner flex items-center justify-center p-0.5 overflow-hidden">
+                                <img id="card-student-qr-img" class="w-full h-full object-contain hidden" alt="Código QR Alumno">
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- Card action buttons -->
+                <div class="mt-6 flex flex-wrap justify-center gap-3">
+                    <button onclick="downloadSingleCardPNG()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold text-xs px-4 py-2.5 rounded-xl shadow-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Descargar Credencial (PNG HD)
+                    </button>
+                    <label class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition flex items-center gap-2">
+                        <i class="fa-solid fa-camera"></i> Cambiar Foto Alumno
+                        <input type="file" id="single-photo-input" accept="image/*" onchange="handleSinglePhotoUpload(event)" class="hidden">
+                    </label>
+                    <label class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-bold text-xs px-4 py-2.5 rounded-xl cursor-pointer transition flex items-center gap-2">
+                        <i class="fa-solid fa-qrcode"></i> Cambiar QR
+                        <input type="file" id="single-qr-input" accept="image/*" onchange="handleSingleQRUpload(event)" class="hidden">
+                    </label>
+                </div>
+
+            </div>
+
+            <!-- TAB CONTENT 2: STUDENT TABLE LIST -->
+            <div id="tab-content-table" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl">
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mb-4">
+                    <div class="relative w-full sm:w-72">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="table-search" placeholder="Buscar por Nombre, CURP o NIA..." oninput="filterTable()"
+                               class="w-full bg-slate-950 border border-slate-800 rounded-xl pl-9 pr-3 py-2 text-xs text-slate-200 focus:outline-none focus:border-amber-400">
+                    </div>
+                    <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                        <button onclick="addNewStudentRow()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-user-plus"></i> Agregar Alumno
+                        </button>
+                        <button onclick="clearAllStudents()" class="bg-rose-950/60 hover:bg-rose-900 border border-rose-800/60 text-rose-300 font-bold text-xs px-3 py-2 rounded-xl transition flex items-center gap-1.5">
+                            <i class="fa-solid fa-trash"></i> Vaciar Tabla
+                        </button>
+                    </div>
+                </div>
+
+                <!-- TABLE -->
+                <div class="overflow-x-auto max-h-[500px] border border-slate-800 rounded-xl">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-950 text-amber-400 uppercase font-extrabold sticky top-0 z-20 border-b border-slate-800">
+                            <tr>
+                                <th class="px-3 py-3 text-center">N.P.</th>
+                                <th class="px-3 py-3 text-center">Foto</th>
+                                <th class="px-3 py-3 text-center">QR</th>
+                                <th class="px-3 py-3">Nombre del Alumno</th>
+                                <th class="px-3 py-3">CURP</th>
+                                <th class="px-3 py-3">NIA</th>
+                                <th class="px-3 py-3">Grado y Grupo</th>
+                                <th class="px-3 py-3 text-center">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="student-table-body" class="divide-y divide-slate-800/60 bg-slate-900">
+                            <!-- Rows injected dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TAB CONTENT 3: PRINT SHEET PREVIEW -->
+            <div id="tab-content-sheet" class="hidden bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl flex flex-col items-center">
+                <div class="w-full flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                    <div>
+                        <h3 class="text-sm font-bold text-white">Vista Previa de Impresión</h3>
+                        <p class="text-xs text-slate-400">Páginas listas para imprimir en papel Carta o A4</p>
+                    </div>
+                    <button onclick="triggerPrint()" class="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs px-5 py-2.5 rounded-xl transition shadow-lg flex items-center gap-2">
+                        <i class="fa-solid fa-print text-sm"></i> Imprimir Todo Ahora
+                    </button>
+                </div>
+
+                <!-- PRINT PAGES CONTAINER FOR SCREEN PREVIEW -->
+                <div id="screen-print-preview-container" class="w-full flex flex-col items-center gap-8 py-4 overflow-y-auto max-h-[700px]">
+                    <!-- Print Pages dynamically rendered here -->
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- PRINT ONLY HIDDEN CONTAINER -->
+    <div id="print-area" class="hidden print-only">
+        <!-- Rendered purely for window.print() -->
+    </div>
+
+    <!-- HIDDEN HD EXPORT CANVAS CONTAINER (Pixel-Perfect 450px x 712px for html2canvas) -->
+    <div id="hd-export-container" style="position: fixed; left: -9999px; top: -9999px; width: 450px; height: 712px; z-index: -9999; pointer-events: none; overflow: hidden; background: #030a16;"></div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // Initial Sample Data
+        const initialSampleData = [
+            { np: 1, curp: "AUGL200207HPLGZNA2", nia: "13296139", name: "AGUILAR GUZMAN LEONIDAS MANUEL", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 2, curp: "AURI200724MPLNITA9", nia: "13296425", name: "ANZURES ROJAS ITZAMARA", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 3, curp: "CACM200618MPLMRXA8", nia: "13372213", name: "CAMARENA CARMONA MIA DENISS", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 4, curp: "CAHD200121HPLSRRA4", nia: "13274119", name: "CASTILLO HERNANDEZ DERECK", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 5, curp: "JERL201022HPLSMRA3", nia: "13322567", name: "DE JESUS RAMIREZ LEONARDO", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 6, curp: "EIHS200116MPLSRMA5", nia: "13283198", name: "ESPINDOLA HERNANDEZ SAMARA", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 7, curp: "FEDM200712MPLRZYA8", nia: "13275007", name: "FERNANDO DIAZ DE LEON MAYTE GUADALUPE", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 8, curp: "FOCE200902HPLLMA0", nia: "13296210", name: "FLORES CALDERON JOSE EMILIANO", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 9, curp: "FOHA200630HPLLRNA9", nia: "13266246", name: "FLORES HERNANDEZ ANGEL FRANCISCO", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 10, curp: "GOST200210MPLLNA02", nia: "13533402", name: "GOIZ SANCHEZ THAILY SOFIA", grado: '1° "A"', photoUrl: null, qrUrl: null },
+            { np: 11, curp: "GOCN200428HPLNBHA2", nia: "13289018", name: "GONZALEZ CEBADA NOAH", grado: '1° "A"', photoUrl: null, qrUrl: null }
+        ];
+
+        // State Management
+        let students = [...initialSampleData];
+        let currentStudentIndex = 0;
+        let globalCiclo = "2026 - 2027";
+        let globalGrado = '1° "A"';
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            renderStudentTable();
+            renderCurrentCard();
+            renderPrintPages();
+            setupDragAndDrop();
+        });
+
+        // Toast Notification System
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const bgClass = type === 'success' ? 'bg-emerald-600 text-white' : 
+                            type === 'error' ? 'bg-rose-600 text-white' : 'bg-amber-500 text-slate-950';
+            const icon = type === 'success' ? 'fa-circle-check' : 
+                         type === 'error' ? 'fa-triangle-exclamation' : 'fa-info-circle';
+
+            toast.className = `${bgClass} px-4 py-3 rounded-xl shadow-2xl font-bold text-xs flex items-center gap-2 pointer-events-auto transition transform translate-y-2 opacity-0 duration-300`;
+            toast.innerHTML = `<i class="fa-solid ${icon}"></i> <span>${message}</span>`;
+
+            container.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            }, 10);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3500);
+        }
+
+        // Tab Switcher
+        function switchTab(tabKey) {
+            ['preview', 'table', 'sheet'].forEach(key => {
+                const btn = document.getElementById(`tab-btn-${key}`);
+                const content = document.getElementById(`tab-content-${key}`);
+                
+                if (key === tabKey) {
+                    btn.className = "px-5 py-3 text-xs font-bold rounded-t-xl transition bg-slate-900 text-amber-400 border-t-2 border-amber-400 flex items-center gap-2";
+                    content.classList.remove('hidden');
+                } else {
+                    btn.className = "px-5 py-3 text-xs font-bold rounded-t-xl transition bg-slate-950 text-slate-400 hover:text-slate-200 border-t-2 border-transparent flex items-center gap-2";
+                    content.classList.add('hidden');
+                }
+            });
+
+            if (tabKey === 'sheet') {
+                renderPrintPages();
+            }
+        }
+
+        // Update Global Ciclo
+        function updateGlobalCiclo(val) {
+            globalCiclo = val || "2026 - 2027";
+            renderCurrentCard();
+            renderPrintPages();
+        }
+
+        // Update Global Grado and propagate to ALL student records dynamically
+        function updateGlobalGrado(val) {
+            globalGrado = val || '1° "A"';
+            students.forEach(st => {
+                st.grado = globalGrado;
+            });
+            renderCurrentCard();
+            renderStudentTable();
+            renderPrintPages();
+        }
+
+        // Render Current Student Card
+        function renderCurrentCard() {
+            if (students.length === 0) {
+                document.getElementById('card-student-name').innerText = "SIN ALUMNOS";
+                document.getElementById('card-student-grado').innerText = "-";
+                document.getElementById('card-student-nia').innerText = "-";
+                document.getElementById('card-student-curp').innerText = "-";
+                document.getElementById('current-card-indicator').innerText = "0 de 0";
+                
+                document.getElementById('card-student-img').classList.add('hidden');
+                document.getElementById('card-default-photo').classList.remove('hidden');
+                document.getElementById('card-student-qr-img').classList.add('hidden');
+                return;
+            }
+
+            if (currentStudentIndex >= students.length) currentStudentIndex = 0;
+            if (currentStudentIndex < 0) currentStudentIndex = students.length - 1;
+
+            const st = students[currentStudentIndex];
+
+            document.getElementById('card-student-name').innerText = st.name || "NOMBRE DEL ALUMNO";
+            document.getElementById('card-student-grado').innerText = st.grado || globalGrado;
+            document.getElementById('card-student-nia').innerText = st.nia || "---";
+            document.getElementById('card-student-curp').innerText = st.curp || "---";
+            document.getElementById('card-student-ciclo').innerText = globalCiclo;
+
+            // Student Photo
+            const imgEl = document.getElementById('card-student-img');
+            const defaultEl = document.getElementById('card-default-photo');
+
+            if (st.photoUrl && st.photoUrl.trim() !== '') {
+                imgEl.src = st.photoUrl;
+                imgEl.classList.remove('hidden');
+                defaultEl.classList.add('hidden');
+            } else {
+                imgEl.src = '';
+                imgEl.classList.add('hidden');
+                defaultEl.classList.remove('hidden');
+            }
+
+            // Student QR Code
+            const qrImgEl = document.getElementById('card-student-qr-img');
+            if (st.qrUrl && st.qrUrl.trim() !== '') {
+                qrImgEl.src = st.qrUrl;
+                qrImgEl.classList.remove('hidden');
+            } else {
+                qrImgEl.src = '';
+                qrImgEl.classList.add('hidden');
+            }
+
+            document.getElementById('current-card-indicator').innerText = `Alumno ${currentStudentIndex + 1} de ${students.length}`;
+        }
+
+        function nextStudent() {
+            if (students.length === 0) return;
+            currentStudentIndex = (currentStudentIndex + 1) % students.length;
+            renderCurrentCard();
+        }
+
+        function prevStudent() {
+            if (students.length === 0) return;
+            currentStudentIndex = (currentStudentIndex - 1 + students.length) % students.length;
+            renderCurrentCard();
+        }
+
+        // Render Student Table
+        function renderStudentTable() {
+            const tbody = document.getElementById('student-table-body');
+            document.getElementById('student-count-badge').innerText = students.length;
+
+            if (students.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="8" class="text-center py-8 text-slate-500 font-medium">
+                            No hay alumnos cargados. Sube un archivo Excel o presiona "Agregar Alumno".
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            tbody.innerHTML = students.map((st, idx) => `
+                <tr class="hover:bg-slate-800/50 transition">
+                    <td class="px-3 py-2.5 text-center font-bold text-amber-400">${st.np || (idx + 1)}</td>
+                    <td class="px-3 py-2.5 text-center">
+                        <div class="relative w-8 h-10 mx-auto rounded-full border border-amber-400/60 overflow-hidden bg-slate-950 flex items-center justify-center">
+                            ${st.photoUrl 
+                                ? `<img src="${st.photoUrl}" class="w-full h-full object-cover">` 
+                                : `<i class="fa-solid fa-user text-slate-600 text-xs"></i>`}
+                            <input type="file" accept="image/*" onchange="uploadStudentTableRowPhoto(${idx}, event)" class="absolute inset-0 opacity-0 cursor-pointer" title="Cambiar foto alumno">
+                        </div>
+                    </td>
+                    <td class="px-3 py-2.5 text-center">
+                        <div class="relative w-8 h-8 mx-auto rounded border border-slate-700 bg-white flex items-center justify-center p-0.5 overflow-hidden">
+                            ${st.qrUrl 
+                                ? `<img src="${st.qrUrl}" class="w-full h-full object-contain">` 
+                                : `<i class="fa-solid fa-qrcode text-slate-400 text-xs"></i>`}
+                            <input type="file" accept="image/*" onchange="uploadStudentTableRowQR(${idx}, event)" class="absolute inset-0 opacity-0 cursor-pointer" title="Cambiar código QR">
+                        </div>
+                    </td>
+                    <td class="px-3 py-2.5">
+                        <input type="text" value="${st.name || ''}" oninput="updateStudentField(${idx}, 'name', this.value)"
+                               class="w-full bg-transparent border-b border-transparent hover:border-slate-700 focus:border-amber-400 focus:bg-slate-950 px-1 py-0.5 text-white font-bold uppercase">
+                    </td>
+                    <td class="px-3 py-2.5">
+                        <input type="text" value="${st.curp || ''}" oninput="updateStudentField(${idx}, 'curp', this.value)"
+                               class="w-full bg-transparent border-b border-transparent hover:border-slate-700 focus:border-amber-400 focus:bg-slate-950 px-1 py-0.5 text-amber-200 font-mono uppercase">
+                    </td>
+                    <td class="px-3 py-2.5">
+                        <input type="text" value="${st.nia || ''}" oninput="updateStudentField(${idx}, 'nia', this.value)"
+                               class="w-full bg-transparent border-b border-transparent hover:border-slate-700 focus:border-amber-400 focus:bg-slate-950 px-1 py-0.5 text-slate-200 font-bold">
+                    </td>
+                    <td class="px-3 py-2.5">
+                        <input type="text" value="${st.grado || globalGrado}" oninput="updateStudentField(${idx}, 'grado', this.value)"
+                               class="w-24 bg-transparent border-b border-transparent hover:border-slate-700 focus:border-amber-400 focus:bg-slate-950 px-1 py-0.5 text-amber-300 font-bold">
+                    </td>
+                    <td class="px-3 py-2.5 text-center">
+                        <div class="flex items-center justify-center gap-2">
+                            <button onclick="previewCardAtIndex(${idx})" title="Ver Credencial" class="text-amber-400 hover:text-amber-300 p-1">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
+                            <button onclick="removeStudentRow(${idx})" title="Eliminar" class="text-rose-400 hover:text-rose-300 p-1">
+                                <i class="fa-solid fa-trash-can"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function updateStudentField(idx, key, val) {
+            students[idx][key] = val;
+            if (idx === currentStudentIndex) renderCurrentCard();
+            renderPrintPages();
+        }
+
+        function previewCardAtIndex(idx) {
+            currentStudentIndex = idx;
+            switchTab('preview');
+            renderCurrentCard();
+        }
+
+        function removeStudentRow(idx) {
+            students.splice(idx, 1);
+            if (currentStudentIndex >= students.length) currentStudentIndex = Math.max(0, students.length - 1);
+            renderStudentTable();
+            renderCurrentCard();
+            renderPrintPages();
+            showToast("Alumno eliminado", "info");
+        }
+
+        function addNewStudentRow() {
+            students.push({
+                np: students.length + 1,
+                curp: "NUEVO000000XXXXXX0",
+                nia: "00000000",
+                name: "NUEVO ALUMNO",
+                grado: globalGrado,
+                photoUrl: null,
+                qrUrl: null
+            });
+            renderStudentTable();
+            renderPrintPages();
+            showToast("Nuevo alumno agregado");
+        }
+
+        function clearAllStudents() {
+            if (students.length === 0) return;
+            students = [];
+            currentStudentIndex = 0;
+            renderStudentTable();
+            renderCurrentCard();
+            renderPrintPages();
+            showToast("Se han eliminado todos los registros", "info");
+        }
+
+        // Image Compression & Optimization Engine via HTML5 Canvas
+        function compressAndResizeImage(file, maxWidth = 800, maxHeight = 1000) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxWidth || height > maxHeight) {
+                            const ratio = Math.min(maxWidth / width, maxHeight / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = true;
+                        ctx.imageSmoothingQuality = 'high';
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        resolve(canvas.toDataURL('image/jpeg', 0.88));
+                    };
+                    img.onerror = (err) => reject(err);
+                    img.src = e.target.result;
+                };
+                reader.onerror = (err) => reject(err);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // QR Code Specific Optimizer (PNG for sharp pixels)
+        function compressAndResizeQRImage(file, maxDimension = 400) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.onload = () => {
+                        let width = img.width;
+                        let height = img.height;
+
+                        if (width > maxDimension || height > maxDimension) {
+                            const ratio = Math.min(maxDimension / width, maxDimension / height);
+                            width = Math.round(width * ratio);
+                            height = Math.round(height * ratio);
+                        }
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = width;
+                        canvas.height = height;
+
+                        const ctx = canvas.getContext('2d');
+                        ctx.imageSmoothingEnabled = false; // Sharp QR pixels
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        resolve(canvas.toDataURL('image/png'));
+                    };
+                    img.onerror = (err) => reject(err);
+                    img.src = e.target.result;
+                };
+                reader.onerror = (err) => reject(err);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Individual Photo Upload from Table
+        async function uploadStudentTableRowPhoto(idx, evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            try {
+                showToast("Procesando foto de alumno...", "info");
+                const resizedDataUrl = await compressAndResizeImage(file);
+                students[idx].photoUrl = resizedDataUrl;
+                renderStudentTable();
+                if (idx === currentStudentIndex) renderCurrentCard();
+                renderPrintPages();
+                showToast(`Foto de ${students[idx].name} actualizada`);
+            } catch (err) {
+                console.error(err);
+                showToast("Error al procesar la foto del alumno", "error");
+            }
+        }
+
+        // Individual QR Upload from Table
+        async function uploadStudentTableRowQR(idx, evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            try {
+                showToast("Procesando código QR...", "info");
+                const qrDataUrl = await compressAndResizeQRImage(file);
+                students[idx].qrUrl = qrDataUrl;
+                renderStudentTable();
+                if (idx === currentStudentIndex) renderCurrentCard();
+                renderPrintPages();
+                showToast(`QR de ${students[idx].name} cargado correctamente`);
+            } catch (err) {
+                console.error(err);
+                showToast("Error al procesar la imagen QR", "error");
+            }
+        }
+
+        function filterTable() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            const rows = document.querySelectorAll('#student-table-body tr');
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                row.style.display = text.includes(query) ? '' : 'none';
+            });
+        }
+
+        // Single Photo Upload for Active Preview Card
+        async function handleSinglePhotoUpload(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            if (students.length === 0) {
+                showToast("No hay alumnos cargados", "error");
+                return;
+            }
+            try {
+                showToast("Optimizando foto...", "info");
+                const resizedDataUrl = await compressAndResizeImage(file);
+                students[currentStudentIndex].photoUrl = resizedDataUrl;
+                renderCurrentCard();
+                renderStudentTable();
+                renderPrintPages();
+                showToast(`Foto asignada a ${students[currentStudentIndex].name}`);
+            } catch (err) {
+                console.error(err);
+                showToast("Error al procesar la foto", "error");
+            }
+            evt.target.value = '';
+        }
+
+        // Single QR Upload for Active Preview Card
+        async function handleSingleQRUpload(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+            if (students.length === 0) {
+                showToast("No hay alumnos cargados", "error");
+                return;
+            }
+            try {
+                showToast("Cargando código QR...", "info");
+                const qrDataUrl = await compressAndResizeQRImage(file);
+                students[currentStudentIndex].qrUrl = qrDataUrl;
+                renderCurrentCard();
+                renderStudentTable();
+                renderPrintPages();
+                showToast(`Código QR asignado a ${students[currentStudentIndex].name}`);
+            } catch (err) {
+                console.error(err);
+                showToast("Error al procesar el QR", "error");
+            }
+            evt.target.value = '';
+        }
+
+        // Clean filename helper to match identifiers (handles `13296139_qr.jpg`, `13296139-qr.png`, `13296139.jpg`)
+        function cleanIdentifier(filename) {
+            return filename
+                .substring(0, filename.lastIndexOf('.'))
+                .replace(/[_ -]?(qr|codigo|code)$/i, '')
+                .trim()
+                .toLowerCase();
+        }
+
+        // Batch Photo Upload & Auto Matcher
+        async function handleBatchPhotos(evt) {
+            const files = Array.from(evt.target.files);
+            if (files.length === 0 || students.length === 0) return;
+
+            showToast("Procesando lote de fotos...", "info");
+            let matchedCount = 0;
+
+            for (const file of files) {
+                const targetKey = cleanIdentifier(file.name);
+                
+                const targetStudent = students.find(s => {
+                    const niaMatch = s.nia && s.nia.toString().trim().toLowerCase() === targetKey;
+                    const curpMatch = s.curp && s.curp.toString().trim().toLowerCase() === targetKey;
+                    const npMatch = s.np && s.np.toString().trim().toLowerCase() === targetKey;
+                    return niaMatch || curpMatch || npMatch;
+                });
+
+                if (targetStudent) {
+                    try {
+                        const resizedDataUrl = await compressAndResizeImage(file);
+                        targetStudent.photoUrl = resizedDataUrl;
+                        matchedCount++;
+                    } catch (err) {
+                        console.error("Error optimizando foto:", file.name, err);
+                    }
+                }
+            }
+
+            if (matchedCount > 0) {
+                renderStudentTable();
+                renderCurrentCard();
+                renderPrintPages();
+                showToast(`Se vincularon ${matchedCount} fotos de alumnos exitosamente`);
+            } else {
+                showToast("No se encontraron coincidencias de fotos con NIA/CURP/N.P.", "error");
+            }
+            evt.target.value = '';
+        }
+
+        // Batch QR Upload & Auto Matcher (NUEVO)
+        async function handleBatchQRs(evt) {
+            const files = Array.from(evt.target.files);
+            if (files.length === 0 || students.length === 0) return;
+
+            showToast("Procesando lote de imágenes QR...", "info");
+            let matchedCount = 0;
+
+            for (const file of files) {
+                const targetKey = cleanIdentifier(file.name);
+                
+                const targetStudent = students.find(s => {
+                    const niaMatch = s.nia && s.nia.toString().trim().toLowerCase() === targetKey;
+                    const curpMatch = s.curp && s.curp.toString().trim().toLowerCase() === targetKey;
+                    const npMatch = s.np && s.np.toString().trim().toLowerCase() === targetKey;
+                    return niaMatch || curpMatch || npMatch;
+                });
+
+                if (targetStudent) {
+                    try {
+                        const qrDataUrl = await compressAndResizeQRImage(file);
+                        targetStudent.qrUrl = qrDataUrl;
+                        matchedCount++;
+                    } catch (err) {
+                        console.error("Error cargando QR:", file.name, err);
+                    }
+                }
+            }
+
+            if (matchedCount > 0) {
+                renderStudentTable();
+                renderCurrentCard();
+                renderPrintPages();
+                showToast(`¡Éxito! Se vincularon ${matchedCount} códigos QR a las credenciales`);
+            } else {
+                showToast("No se encontraron coincidencias de QR con NIA/CURP/N.P.", "error");
+            }
+            evt.target.value = '';
+        }
+
+        // EXCEL / CSV PARSER
+        function handleExcelUpload(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    
+                    const jsonRows = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    if (!jsonRows || jsonRows.length === 0) {
+                        showToast("El archivo Excel está vacío", "error");
+                        return;
+                    }
+
+                    parseExcelStructure(jsonRows);
+                } catch (err) {
+                    console.error(err);
+                    showToast("Error al procesar el archivo Excel", "error");
+                }
+            };
+            reader.readAsArrayBuffer(file);
+            evt.target.value = '';
+        }
+
+        function parseExcelStructure(rows) {
+            let extractedGrado = globalGrado;
+            let headerRowIndex = -1;
+            let colMap = { np: -1, curp: -1, nia: -1, name: -1 };
+
+            for (let r = 0; r < Math.min(rows.length, 10); r++) {
+                const rowStr = rows[r].map(c => String(c || '')).join(' ');
+                
+                if (rowStr.toUpperCase().includes("GRADO Y GRUPO")) {
+                    const match = rowStr.match(/GRADO Y GRUPO[_\s]*([1-6]°?\s*["']?[A-Z]["']?)/i);
+                    if (match && match[1]) {
+                        extractedGrado = match[1].trim();
+                        document.getElementById('global-grado').value = extractedGrado;
+                        globalGrado = extractedGrado;
+                    }
+                }
+
+                for (let c = 0; c < rows[r].length; c++) {
+                    const cellVal = String(rows[r][c] || '').trim().toUpperCase();
+                    if (cellVal.includes('CURP')) colMap.curp = c;
+                    if (cellVal.includes('NIA')) colMap.nia = c;
+                    if (cellVal.includes('NOMBRE')) colMap.name = c;
+                    if (cellVal.includes('N.P') || cellVal === 'NP' || cellVal === 'NO.') colMap.np = c;
+                }
+
+                if (colMap.curp !== -1 || colMap.name !== -1) {
+                    headerRowIndex = r;
+                    break;
+                }
+            }
+
+            if (colMap.np === -1) colMap.np = 0;
+            if (colMap.curp === -1) colMap.curp = 1;
+            if (colMap.nia === -1) colMap.nia = 2;
+            if (colMap.name === -1) colMap.name = 3;
+
+            const startRow = headerRowIndex !== -1 ? headerRowIndex + 1 : 0;
+            const parsedStudents = [];
+
+            for (let r = startRow; r < rows.length; r++) {
+                const row = rows[r];
+                if (!row || row.length === 0) continue;
+
+                const nameVal = row[colMap.name] ? String(row[colMap.name]).trim() : '';
+                const curpVal = row[colMap.curp] ? String(row[colMap.curp]).trim() : '';
+                const niaVal = row[colMap.nia] ? String(row[colMap.nia]).trim() : '';
+                const npVal = row[colMap.np] ? String(row[colMap.np]).trim() : (parsedStudents.length + 1);
+
+                if (!nameVal && !curpVal && !niaVal) continue;
+                if (nameVal.toUpperCase().includes("NOMBRE DEL ALUMNO")) continue;
+
+                parsedStudents.push({
+                    np: npVal,
+                    curp: curpVal,
+                    nia: niaVal,
+                    name: nameVal,
+                    grado: extractedGrado,
+                    photoUrl: null,
+                    qrUrl: null
+                });
+            }
+
+            if (parsedStudents.length > 0) {
+                students = parsedStudents;
+                currentStudentIndex = 0;
+                renderStudentTable();
+                renderCurrentCard();
+                renderPrintPages();
+                showToast(`¡Éxito! Importados ${students.length} alumnos de Excel`);
+            } else {
+                showToast("No se encontraron registros de alumnos válidos", "error");
+            }
+        }
+
+        // Setup Drag & Drop Zone
+        function setupDragAndDrop() {
+            const dropZone = document.getElementById('drop-zone');
+            ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, (e) => { e.preventDefault(); e.stopPropagation(); }, false);
+            });
+            ['dragenter', 'dragover'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.add('border-amber-400', 'bg-amber-500/10'), false);
+            });
+            ['dragleave', 'drop'].forEach(eventName => {
+                dropZone.addEventListener(eventName, () => dropZone.classList.remove('border-amber-400', 'bg-amber-500/10'), false);
+            });
+            dropZone.addEventListener('drop', (e) => {
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    handleExcelUpload({ target: { files: files } });
+                }
+            });
+        }
+
+        // Download Excel Sample
+        function downloadSampleExcel() {
+            const sampleData = [
+                ["", "", "GRADO Y GRUPO ___ 1° \"A\" ___", ""],
+                ["N.P.", "CURP", "NIA", "NOMBRE DEL ALUMNO (A)"],
+                [1, "AUGL200207HPLGZNA2", "13296139", "AGUILAR GUZMAN LEONIDAS MANUEL"],
+                [2, "AURI200724MPLNITA9", "13296425", "ANZURES ROJAS ITZAMARA"],
+                [3, "CACM200618MPLMRXA8", "13372213", "CAMARENA CARMONA MIA DENISS"],
+                [4, "CAHD200121HPLSRRA4", "13274119", "CASTILLO HERNANDEZ DERECK"],
+                [5, "GOCN200428HPLNBHA2", "13289018", "GONZALEZ CEBADA NOAH"]
+            ];
+
+            const ws = XLSX.utils.aoa_to_sheet(sampleData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "Alumnos");
+            XLSX.writeFile(wb, "Plantilla_Credenciales_CadeteVicenteSuarez.xlsx");
+        }
+
+        // Generate Pixel-Perfect HD HTML dedicated for HTML2Canvas capture
+        function renderHDCardTemplate(st) {
+            const photoHTML = (st.photoUrl && st.photoUrl.trim() !== '')
+                ? `<img src="${st.photoUrl}" style="width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 50%;">`
+                : `<div style="width: 100%; height: 100%; border-radius: 50%; background: linear-gradient(180deg, #7ec0ee 0%, #cbe5ff 50%, #9bc440 50.1%, #6a9616 100%); position: relative; overflow: hidden;">
+                    <div style="position: absolute; top: 20%; left: 50%; transform: translateX(-50%); width: 70px; height: 30px; background: #ffffff; border-radius: 20px;"></div>
+                   </div>`;
+
+            const qrHTML = (st.qrUrl && st.qrUrl.trim() !== '')
+                ? `<img src="${st.qrUrl}" style="width: 100%; height: 100%; object-fit: contain; display: block;">`
+                : '';
+
+            return `
+                <div style="width: 450px; height: 712px; font-family: 'Montserrat', sans-serif; background: radial-gradient(circle at 50% 30%, #0d2c54 0%, #06152b 75%, #030a16 100%); border: 4px solid #f5c542; border-radius: 24px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;">
+                    
+                    <!-- Background SVG Polygons -->
+                    <svg viewBox="0 0 330 522" fill="none" xmlns="http://www.w3.org/2000/svg" style="position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1;">
+                        <path d="M-20 -20 L140 -20 L-20 180 Z" fill="#0096c7" opacity="0.25" />
+                        <path d="M350 -20 L350 200 L180 -20 Z" fill="#0077b6" opacity="0.35" />
+                        <path d="M350 140 L350 360 L210 250 Z" fill="#0096c7" opacity="0.3" />
+                        <path d="M-20 300 L110 420 L-20 480 Z" fill="#0077b6" opacity="0.25" />
+                        <path d="M0 430 L120 540" stroke="#f5c542" stroke-width="3" opacity="0.7" />
+                        <path d="M210 540 L340 410" stroke="#f5c542" stroke-width="4" opacity="0.8" />
+                    </svg>
+
+                    <!-- Header -->
+                    <div style="position: relative; z-index: 10; text-align: center;">
+                        <div style="background: linear-gradient(180deg, #092040 0%, #041024 100%); border: 2px solid #e0ab2b; border-radius: 14px; padding: 10px 12px;">
+                            <h3 style="color: #ffffff; font-size: 13px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase; margin: 0 0 4px 0; line-height: 1;">
+                                ESCUELA PRIMARIA MATUTINA
+                            </h3>
+                            <h2 style="color: #fce07a; font-size: 22px; font-weight: 900; text-transform: uppercase; margin: 0; line-height: 1.1; text-shadow: 0 2px 4px rgba(0,0,0,0.9);">
+                                CADETE VICENTE SUÁREZ
+                            </h2>
+                        </div>
+                    </div>
+
+                    <!-- Oval Photo -->
+                    <div style="position: relative; z-index: 10; display: flex; justify-content: center; margin: 8px 0;">
+                        <div style="width: 220px; height: 286px; border-radius: 50%; background: linear-gradient(145deg, #fff5b8 0%, #e5b32a 40%, #8e620c 70%, #ffd966 100%); padding: 6px; box-sizing: border-box; display: flex; align-items: center; justify-content: center; box-shadow: 0 8px 18px rgba(0,0,0,0.6);">
+                            <div style="width: 100%; height: 100%; border-radius: 50%; overflow: hidden; background: #071326; position: relative;">
+                                ${photoHTML}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Student Info -->
+                    <div style="position: relative; z-index: 10; text-align: center; display: flex; flex-direction: column; gap: 4px;">
+                        <div>
+                            <span style="display: block; color: #f7cb45; font-size: 12px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; text-shadow: 0 1px 2px rgba(0,0,0,0.9);">
+                                NOMBRE DEL ALUMNO:
+                            </span>
+                            <h4 style="color: #ffffff; font-size: 17px; font-weight: 900; text-transform: uppercase; margin: 2px 0 0 0; line-height: 1.2; text-shadow: 0 2px 4px rgba(0,0,0,0.9);">
+                                ${st.name || 'NOMBRE DEL ALUMNO'}
+                            </h4>
+                        </div>
+
+                        <div style="display: flex; justify-content: space-between; align-items: center; padding: 0 12px; margin-top: 4px;">
+                            <div style="text-align: left;">
+                                <span style="color: #f7cb45; font-size: 11px; font-weight: 800;">GRADO Y GRUPO: </span>
+                                <span style="color: #ffffff; font-size: 14px; font-weight: 900;">${st.grado || globalGrado}</span>
+                            </div>
+                            <div style="text-align: right;">
+                                <span style="color: #f7cb45; font-size: 11px; font-weight: 800;">NIA: </span>
+                                <span style="color: #ffffff; font-size: 14px; font-weight: 900;">${st.nia || '---'}</span>
+                            </div>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <span style="color: #f7cb45; font-size: 11px; font-weight: 800;">CURP: </span>
+                            <span style="color: #ffffff; font-size: 14px; font-family: monospace; font-weight: 800; letter-spacing: 1px;">${st.curp || '---'}</span>
+                        </div>
+
+                        <div style="text-align: center;">
+                            <span style="color: #f7cb45; font-size: 11px; font-weight: 800;">CICLO ESCOLAR: </span>
+                            <span style="color: #ffffff; font-size: 14px; font-weight: 900;">${globalCiclo}</span>
+                        </div>
+                    </div>
+
+                    <!-- Footer Shield & QR Box -->
+                    <div style="position: relative; z-index: 10; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px;">
+                        <!-- Shield Emblem -->
+                        <div style="width: 72px; height: 84px; display: flex; align-items: center; justify-content: center;">
+                            <svg viewBox="0 0 100 120" style="width: 100%; height: 100%;">
+                                <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
+                                <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+                                <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
+                                <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
+                                <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
+                                <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
+                                <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
+                                <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
+                                <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
+                            </svg>
+                        </div>
+
+                        <!-- QR Box Container -->
+                        <div style="width: 82px; height: 82px; background: #ffffff; border-radius: 8px; border: 1px solid #cbd5e1; box-shadow: inset 0 2px 4px rgba(0,0,0,0.08); overflow: hidden; padding: 2px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">
+                            ${qrHTML}
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        }
+
+        // High-Fidelity HD Single PNG Download
+        async function downloadSingleCardPNG() {
+            if (students.length === 0) {
+                showToast("No hay alumnos para exportar", "error");
+                return;
+            }
+
+            const student = students[currentStudentIndex];
+            const exportContainer = document.getElementById('hd-export-container');
+            
+            showToast("Generando credencial en Alta Definición (HD)...", "info");
+
+            exportContainer.innerHTML = renderHDCardTemplate(student);
+
+            if (document.fonts) await document.fonts.ready;
+            await new Promise(r => setTimeout(r, 200));
+
+            try {
+                const canvas = await html2canvas(exportContainer.firstElementChild, {
+                    scale: 3,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false
+                });
+
+                const link = document.createElement('a');
+                link.download = `Credencial_${(student.name || 'Alumno').replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+                link.href = canvas.toDataURL('image/png', 1.0);
+                link.click();
+
+                exportContainer.innerHTML = '';
+                showToast("¡Credencial PNG HD descargada correctamente!");
+            } catch (err) {
+                console.error("Error al exportar PNG:", err);
+                showToast("Error al exportar la credencial en HD", "error");
+            }
+        }
+
+        // Batch Download all credentials in a single ZIP file
+        async function downloadAllCardsZIP() {
+            if (students.length === 0) {
+                showToast("No hay alumnos cargados para exportar", "error");
+                return;
+            }
+
+            if (typeof JSZip === 'undefined') {
+                showToast("Cargando módulo de compresión ZIP...", "info");
+                await new Promise(r => setTimeout(r, 1000));
+            }
+
+            const exportContainer = document.getElementById('hd-export-container');
+            const zip = new JSZip();
+            const folderName = `Credenciales_${globalGrado.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+            const zipFolder = zip.folder(folderName);
+
+            showToast(`Generando lote completo de ${students.length} credenciales HD...`, "info");
+
+            for (let i = 0; i < students.length; i++) {
+                const st = students[i];
+                exportContainer.innerHTML = renderHDCardTemplate(st);
+
+                if (document.fonts) await document.fonts.ready;
+                await new Promise(r => setTimeout(r, 100));
+
+                const canvas = await html2canvas(exportContainer.firstElementChild, {
+                    scale: 2.5,
+                    useCORS: true,
+                    allowTaint: true,
+                    backgroundColor: null,
+                    logging: false
+                });
+
+                const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
+                const fileName = `${st.np || (i + 1)}_${(st.name || 'Alumno').replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
+                zipFolder.file(fileName, imgData, { base64: true });
+            }
+
+            exportContainer.innerHTML = '';
+            showToast("Comprimiendo archivo ZIP...", "info");
+
+            const content = await zip.generateAsync({ type: "blob" });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(content);
+            link.download = `${folderName}.zip`;
+            link.click();
+
+            showToast("¡Descarga de lote ZIP completada!");
+        }
+
+        // Render Cards in Batch Grid for Screen Preview & Print Area
+        function renderPrintPages() {
+            const screenContainer = document.getElementById('screen-print-preview-container');
+            const printArea = document.getElementById('print-area');
+            const cardsPerPage = parseInt(document.getElementById('cards-per-page').value, 10) || 8;
+            const showCropMarks = document.getElementById('show-crop-marks').checked;
+
+            screenContainer.innerHTML = '';
+            printArea.innerHTML = '';
+
+            if (students.length === 0) {
+                screenContainer.innerHTML = `<p class="text-slate-500 py-10 font-semibold">No hay credenciales para mostrar.</p>`;
+                return;
+            }
+
+            const totalPages = Math.ceil(students.length / cardsPerPage);
+
+            for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+                const pageStudents = students.slice(pageIdx * cardsPerPage, (pageIdx + 1) * cardsPerPage);
+                
+                // Screen preview page container
+                const screenPage = document.createElement('div');
+                screenPage.className = "bg-slate-950 border border-slate-700 shadow-2xl p-6 rounded-2xl w-full max-w-[800px] flex flex-col items-center";
+                screenPage.innerHTML = `
+                    <div class="w-full flex justify-between items-center text-xs text-amber-400 font-bold mb-4 pb-2 border-b border-slate-800">
+                        <span>Página ${pageIdx + 1} de ${totalPages}</span>
+                        <span>${pageStudents.length} Credenciales</span>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 justify-items-center w-full">
+                        ${pageStudents.map(st => generateCardHTML(st, showCropMarks, 0.72)).join('')}
+                    </div>
+                `;
+                screenContainer.appendChild(screenPage);
+
+                // Print DOM page container
+                const printPage = document.createElement('div');
+                printPage.className = "print-page";
+                printPage.innerHTML = pageStudents.map(st => generateCardHTML(st, showCropMarks, 1.0)).join('');
+                printArea.appendChild(printPage);
+            }
+        }
+
+        // Helper function generating exact Credential HTML
+        function generateCardHTML(st, showCropMarks, scale = 1.0) {
+            const cropStyles = showCropMarks ? 'border border-dashed border-amber-400/40' : '';
+            const width = Math.round(330 * scale);
+            const height = Math.round(522 * scale);
+
+            const photoHTML = (st.photoUrl && st.photoUrl.trim() !== '')
+                ? `<img src="${st.photoUrl}" class="w-full h-full object-cover block">`
+                : `<div class="w-full h-full default-landscape-bg flex flex-col items-center justify-center"><div class="default-cloud"></div></div>`;
+
+            const qrHTML = (st.qrUrl && st.qrUrl.trim() !== '')
+                ? `<img src="${st.qrUrl}" class="w-full h-full object-contain block">`
+                : '';
+
+            return `
+                <div class="${cropStyles} p-1 rounded-2xl bg-transparent">
+                    <div class="credential-card card-bg-gradient rounded-2xl border-[3px] border-amber-400/80 flex flex-col justify-between p-3 select-none relative overflow-hidden"
+                         style="width: ${width}px; height: ${height}px;">
+                        
+                        <!-- Geometric Background SVG Overlay -->
+                        <svg class="card-bg-polygons" viewBox="0 0 330 522" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M-20 -20 L140 -20 L-20 180 Z" fill="#0096c7" opacity="0.25" />
+                            <path d="M350 -20 L350 200 L180 -20 Z" fill="#0077b6" opacity="0.35" />
+                            <path d="M350 140 L350 360 L210 250 Z" fill="#0096c7" opacity="0.3" />
+                            <path d="M-20 300 L110 420 L-20 480 Z" fill="#0077b6" opacity="0.25" />
+                            <path d="M0 430 L120 540" stroke="#f5c542" stroke-width="3" opacity="0.7" />
+                            <path d="M210 540 L340 410" stroke="#f5c542" stroke-width="4" opacity="0.8" />
+                        </svg>
+
+                        <!-- Header -->
+                        <div class="relative z-10 text-center pt-1">
+                            <div class="gold-header-banner rounded-xl py-1 px-1.5">
+                                <h3 class="text-[10px] font-extrabold tracking-widest text-white uppercase font-sans leading-none mb-0.5">
+                                    ESCUELA PRIMARIA MATUTINA
+                                </h3>
+                                <h2 class="text-[15px] font-black uppercase font-sans gold-text-gradient tracking-tight leading-tight">
+                                    CADETE VICENTE SUÁREZ
+                                </h2>
+                            </div>
+                        </div>
+
+                        <!-- Oval Photo -->
+                        <div class="relative z-10 my-auto flex justify-center py-1">
+                            <div class="gold-frame-ring w-[150px] h-[195px] rounded-[50%/50%] flex items-center justify-center overflow-hidden">
+                                <div class="w-full h-full rounded-[50%/50%] overflow-hidden bg-slate-900 relative">
+                                    ${photoHTML}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Student Information -->
+                        <div class="relative z-10 flex flex-col items-center text-center px-1 space-y-0.5 font-sans">
+                            <div class="w-full">
+                                <span class="block text-[9px] font-extrabold gold-text-bright tracking-wider uppercase">
+                                    NOMBRE DEL ALUMNO:
+                                </span>
+                                <h4 class="text-[12px] font-black text-white uppercase tracking-tight leading-tight line-clamp-2">
+                                    ${st.name || 'NOMBRE ALUMNO'}
+                                </h4>
+                            </div>
+
+                            <div class="w-full flex items-center justify-between px-1">
+                                <div>
+                                    <span class="text-[8.5px] font-extrabold gold-text-bright">GRADO Y GRUPO: </span>
+                                    <span class="text-[10px] font-black text-white">${st.grado || globalGrado}</span>
+                                </div>
+                                <div>
+                                    <span class="text-[8.5px] font-extrabold gold-text-bright">NIA: </span>
+                                    <span class="text-[10px] font-black text-white">${st.nia || '---'}</span>
+                                </div>
+                            </div>
+
+                            <div class="w-full text-center">
+                                <span class="text-[8.5px] font-extrabold gold-text-bright">CURP: </span>
+                                <span class="text-[10px] font-mono font-extrabold text-white tracking-wider">${st.curp || '---'}</span>
+                            </div>
+
+                            <div class="w-full text-center">
+                                <span class="text-[8.5px] font-extrabold gold-text-bright">CICLO ESCOLAR: </span>
+                                <span class="text-[10px] font-black text-white">${globalCiclo}</span>
+                            </div>
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="relative z-10 flex items-end justify-between px-1 pt-1">
+                            <!-- Shield Emblem -->
+                            <div class="w-12 h-14 relative flex items-center justify-center">
+                                <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow">
+                                    <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
+                                    <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+                                    <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
+                                    <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
+                                    <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
+                                    <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
+                                    <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
+                                    <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
+                                    <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
+                                </svg>
+                            </div>
+
+                            <!-- QR Box -->
+                            <div class="w-[55px] h-[55px] bg-white rounded border border-slate-300 shadow-inner flex items-center justify-center p-0.5 overflow-hidden">
+                                ${qrHTML}
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            `;
+        }
+
+        // Native Print Trigger
+        function triggerPrint() {
+            if (students.length === 0) {
+                showToast("No hay alumnos para imprimir", "error");
+                return;
+            }
+            renderPrintPages();
+            window.print();
+        }
+    </script>
+</body>
+</html>
