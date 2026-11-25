@@ -288,9 +288,21 @@
             <!-- CARD CUSTOMIZER QUICK CONTROLS -->
             <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
                 <h2 class="text-sm font-extrabold uppercase tracking-wider text-amber-400 mb-3 flex items-center gap-2">
-                    <i class="fa-solid fa-sliders"></i> Ajustes de Impresión
+                    <i class="fa-solid fa-sliders"></i> 4. Logo Escuela e Impresión
                 </h2>
                 <div class="space-y-3">
+                    <!-- NUEVO BOTÓN PARA SUBIR EL ESCUDO -->
+                    <div class="pb-3 border-b border-slate-800">
+                        <label class="block text-xs font-semibold text-slate-300 mb-1.5">Escudo / Logo de la Escuela</label>
+                        <label class="block">
+                            <input type="file" id="school-logo-input" accept="image/*" onchange="handleSchoolLogoUpload(event)" class="hidden">
+                            <span class="w-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-amber-300 font-semibold text-xs py-2 px-3 rounded-xl cursor-pointer transition flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-amber-400"></i> Subir Logo Real (PNG/JPG)
+                            </span>
+                        </label>
+                        <p class="text-[10px] text-slate-400 mt-1">Se recomienda PNG sin fondo (transparente).</p>
+                    </div>
+
                     <div class="flex items-center justify-between text-xs text-slate-300">
                         <span>Mostrar Marcas de Corte:</span>
                         <input type="checkbox" id="show-crop-marks" checked onchange="renderPrintPages()" class="w-4 h-4 accent-amber-500 rounded cursor-pointer">
@@ -419,7 +431,7 @@
                         <div class="relative z-10 flex items-end justify-between px-1 pt-1">
                             <!-- School Shield Emblem (Left) -->
                             <div class="flex items-center gap-1.5">
-                                <div class="w-14 h-16 relative flex items-center justify-center">
+                                <div id="card-school-logo-box" class="w-14 h-16 relative flex items-center justify-center">
                                     <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow-md">
                                         <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
                                         <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
@@ -552,6 +564,7 @@
         let currentStudentIndex = 0;
         let globalCiclo = "2026 - 2027";
         let globalGrado = '1° "A"';
+        let customSchoolLogoUrl = null;
 
         // Initialization
         window.addEventListener('DOMContentLoaded', () => {
@@ -622,6 +635,29 @@
             renderCurrentCard();
             renderStudentTable();
             renderPrintPages();
+        }
+
+        // Subir y aplicar el logo real de la escuela
+        function handleSchoolLogoUpload(evt) {
+            const file = evt.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                customSchoolLogoUrl = e.target.result;
+                
+                // Actualizar vista previa principal
+                const logoBox = document.getElementById('card-school-logo-box');
+                if (logoBox) {
+                    logoBox.innerHTML = `<img src="${customSchoolLogoUrl}" class="w-full h-full object-contain drop-shadow-md" alt="Escudo Escuela">`;
+                }
+
+                // Actualizar hojas de impresión
+                renderPrintPages();
+                showToast("¡Escudo de la escuela actualizado en todas las credenciales!");
+            };
+            reader.readAsDataURL(file);
+            evt.target.value = '';
         }
 
         // Render Current Student Card
@@ -1009,7 +1045,7 @@
             evt.target.value = '';
         }
 
-        // Batch QR Upload & Auto Matcher (NUEVO)
+        // Batch QR Upload & Auto Matcher
         async function handleBatchQRs(evt) {
             const files = Array.from(evt.target.files);
             if (files.length === 0 || students.length === 0) return;
@@ -1203,6 +1239,20 @@
                 ? `<img src="${st.qrUrl}" style="width: 100%; height: 100%; object-fit: contain; display: block;">`
                 : '';
 
+            const logoHTML = customSchoolLogoUrl
+                ? `<img src="${customSchoolLogoUrl}" style="width: 100%; height: 100%; object-fit: contain;">`
+                : `<svg viewBox="0 0 100 120" style="width: 100%; height: 100%;">
+                    <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
+                    <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+                    <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
+                    <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
+                    <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
+                    <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
+                    <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
+                    <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
+                    <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
+                </svg>`;
+
             return `
                 <div style="width: 450px; height: 712px; font-family: 'Montserrat', sans-serif; background: radial-gradient(circle at 50% 30%, #0d2c54 0%, #06152b 75%, #030a16 100%); border: 4px solid #f5c542; border-radius: 24px; padding: 18px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; position: relative; overflow: hidden;">
                     
@@ -1274,17 +1324,7 @@
                     <div style="position: relative; z-index: 10; display: flex; align-items: flex-end; justify-content: space-between; padding: 0 4px;">
                         <!-- Shield Emblem -->
                         <div style="width: 72px; height: 84px; display: flex; align-items: center; justify-content: center;">
-                            <svg viewBox="0 0 100 120" style="width: 100%; height: 100%;">
-                                <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
-                                <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
-                                <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
-                                <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
-                                <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
-                                <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
-                                <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
-                                <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
-                                <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
-                            </svg>
+                            ${logoHTML}
                         </div>
 
                         <!-- QR Box Container -->
@@ -1326,7 +1366,9 @@
                 const link = document.createElement('a');
                 link.download = `Credencial_${(student.name || 'Alumno').replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
                 link.href = canvas.toDataURL('image/png', 1.0);
+                document.body.appendChild(link);
                 link.click();
+                document.body.removeChild(link);
 
                 exportContainer.innerHTML = '';
                 showToast("¡Credencial PNG HD descargada correctamente!");
@@ -1336,7 +1378,7 @@
             }
         }
 
-        // Batch Download all credentials in a single ZIP file
+        // Batch Download all credentials in a single ZIP file (OPTIMIZADO)
         async function downloadAllCardsZIP() {
             if (students.length === 0) {
                 showToast("No hay alumnos cargados para exportar", "error");
@@ -1344,47 +1386,94 @@
             }
 
             if (typeof JSZip === 'undefined') {
-                showToast("Cargando módulo de compresión ZIP...", "info");
-                await new Promise(r => setTimeout(r, 1000));
+                showToast("Error: La librería JSZip no cargó. Revisa tu conexión a internet.", "error");
+                return;
+            }
+
+            const zipBtn = document.querySelector('button[onclick="downloadAllCardsZIP()"]');
+            const originalBtnHTML = zipBtn ? zipBtn.innerHTML : '';
+            if (zipBtn) {
+                zipBtn.disabled = true;
+                zipBtn.classList.add('opacity-60', 'cursor-not-allowed');
             }
 
             const exportContainer = document.getElementById('hd-export-container');
             const zip = new JSZip();
-            const folderName = `Credenciales_${globalGrado.replace(/[^a-zA-Z0-9_-]/g, '_')}`;
+            const folderName = `Credenciales_${globalGrado.replace(/[^a-zA-Z0-9_-]/g, '_') || 'Grupo'}`;
             const zipFolder = zip.folder(folderName);
 
-            showToast(`Generando lote completo de ${students.length} credenciales HD...`, "info");
-
-            for (let i = 0; i < students.length; i++) {
-                const st = students[i];
-                exportContainer.innerHTML = renderHDCardTemplate(st);
+            try {
+                showToast(`Iniciando generación de ${students.length} credenciales...`, "info");
 
                 if (document.fonts) await document.fonts.ready;
-                await new Promise(r => setTimeout(r, 100));
 
-                const canvas = await html2canvas(exportContainer.firstElementChild, {
-                    scale: 2.5,
-                    useCORS: true,
-                    allowTaint: true,
-                    backgroundColor: null,
-                    logging: false
+                for (let i = 0; i < students.length; i++) {
+                    const st = students[i];
+
+                    if (zipBtn) {
+                        zipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Procesando ${i + 1}/${students.length}...</span>`;
+                    }
+
+                    exportContainer.innerHTML = renderHDCardTemplate(st);
+
+                    // Breve pausa para permitir renderizado y liberación de memoria
+                    await new Promise(r => setTimeout(r, 60));
+
+                    const canvas = await html2canvas(exportContainer.firstElementChild, {
+                        scale: 2,
+                        useCORS: true,
+                        allowTaint: true,
+                        backgroundColor: '#030a16',
+                        logging: false
+                    });
+
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png', 0.95));
+                    
+                    const safeName = (st.name || 'Alumno').replace(/[^a-zA-Z0-9_-]/g, '_');
+                    const fileName = `${String(i + 1).padStart(2, '0')}_${safeName}.png`;
+                    zipFolder.file(fileName, blob);
+
+                    // Limpiar canvas de memoria
+                    canvas.width = 0;
+                    canvas.height = 0;
+                }
+
+                exportContainer.innerHTML = '';
+
+                if (zipBtn) {
+                    zipBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i> <span>Comprimiendo ZIP...</span>`;
+                }
+                showToast("Comprimiendo archivo ZIP, espera un momento...", "info");
+
+                const content = await zip.generateAsync({ 
+                    type: "blob",
+                    compression: "DEFLATE",
+                    compressionOptions: { level: 6 }
                 });
 
-                const imgData = canvas.toDataURL('image/png', 1.0).split(',')[1];
-                const fileName = `${st.np || (i + 1)}_${(st.name || 'Alumno').replace(/[^a-zA-Z0-9_-]/g, '_')}.png`;
-                zipFolder.file(fileName, imgData, { base64: true });
+                const url = URL.createObjectURL(content);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `${folderName}.zip`;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                setTimeout(() => URL.revokeObjectURL(url), 10000);
+
+                showToast("¡Descarga de lote ZIP completada!");
+
+            } catch (err) {
+                console.error("Error detallado al generar ZIP:", err);
+                showToast(`Error al generar ZIP: ${err.message || 'Fallo de memoria/renderizado'}`, "error");
+            } finally {
+                exportContainer.innerHTML = '';
+                if (zipBtn) {
+                    zipBtn.disabled = false;
+                    zipBtn.classList.remove('opacity-60', 'cursor-not-allowed');
+                    zipBtn.innerHTML = originalBtnHTML;
+                }
             }
-
-            exportContainer.innerHTML = '';
-            showToast("Comprimiendo archivo ZIP...", "info");
-
-            const content = await zip.generateAsync({ type: "blob" });
-            const link = document.createElement('a');
-            link.href = URL.createObjectURL(content);
-            link.download = `${folderName}.zip`;
-            link.click();
-
-            showToast("¡Descarga de lote ZIP completada!");
         }
 
         // Render Cards in Batch Grid for Screen Preview & Print Area
@@ -1442,6 +1531,20 @@
             const qrHTML = (st.qrUrl && st.qrUrl.trim() !== '')
                 ? `<img src="${st.qrUrl}" class="w-full h-full object-contain block">`
                 : '';
+
+            const logoHTML = customSchoolLogoUrl
+                ? `<img src="${customSchoolLogoUrl}" class="w-full h-full object-contain drop-shadow">`
+                : `<svg viewBox="0 0 100 120" class="w-full h-full drop-shadow">
+                    <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
+                    <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
+                    <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
+                    <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
+                    <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
+                    <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
+                    <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
+                    <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
+                    <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
+                </svg>`;
 
             return `
                 <div class="${cropStyles} p-1 rounded-2xl bg-transparent">
@@ -1516,17 +1619,7 @@
                         <div class="relative z-10 flex items-end justify-between px-1 pt-1">
                             <!-- Shield Emblem -->
                             <div class="w-12 h-14 relative flex items-center justify-center">
-                                <svg viewBox="0 0 100 120" class="w-full h-full drop-shadow">
-                                    <path d="M50 5 L90 20 L85 85 L50 115 L15 85 L10 20 Z" fill="#091f3d" stroke="#f5c542" stroke-width="4"/>
-                                    <circle cx="50" cy="55" r="32" fill="#ffffff" stroke="#1d4ed8" stroke-width="2"/>
-                                    <path d="M50 32 C43 32 38 37 38 44 C38 48 40 52 44 54 L44 60 C36 62 30 68 30 78 L70 78 C70 68 64 62 56 60 L56 54 C60 52 62 48 62 44 C62 37 57 32 50 32 Z" fill="#0b2545"/>
-                                    <path d="M36 40 L64 36 L66 42 L34 44 Z" fill="#0284c7"/>
-                                    <path d="M22 55 Q20 40 30 30 Q25 45 25 60 Z" fill="#15803d"/>
-                                    <path d="M78 55 Q80 40 70 30 Q75 45 75 60 Z" fill="#15803d"/>
-                                    <path d="M5 95 Q50 118 95 95 L90 85 Q50 108 10 85 Z" fill="#d49e1e"/>
-                                    <text x="50" y="98" font-size="7" font-weight="900" fill="#040b17" text-anchor="middle">CADETE VICENTE SUÁREZ</text>
-                                    <text x="50" y="16" font-size="6.5" font-weight="900" fill="#ffffff" text-anchor="middle">ESC.PRIM.MAT.</text>
-                                </svg>
+                                ${logoHTML}
                             </div>
 
                             <!-- QR Box -->
